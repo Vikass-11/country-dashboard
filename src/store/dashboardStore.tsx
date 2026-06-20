@@ -1,8 +1,12 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { Country } from '../types'
 
 interface DashboardContextType {
   countries: Country[]
+  customCountries: Country[]
+  allCountries: Country[]
   selectedCountries: Country[]
   loading: boolean
   error: string | null
@@ -17,32 +21,37 @@ interface DashboardContextType {
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
 
-export const DashboardProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const DashboardProvider = ({ children }: { children: ReactNode }) => {
   const [countries, setCountries] = useState<Country[]>([])
+  const [customCountries, setCustomCountries] = useState<Country[]>([])
   const [selectedCountries, setSelectedCountries] = useState<Country[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const addCountry = (country: Country) => {
-    setCountries([...countries, { ...country, id: Date.now().toString() }])
+    setCustomCountries((current) => [...current, { ...country, id: Date.now().toString() }])
   }
 
   const removeCountry = (countryCode: string) => {
-    setCountries(countries.filter((c) => c.countryCode !== countryCode))
+    setCustomCountries((current) => current.filter((country) => country.countryCode !== countryCode))
   }
 
   const selectCountry = (country: Country) => {
-    setSelectedCountries([...selectedCountries, country])
+    setSelectedCountries((current) => [...current, country])
   }
 
   const deselectCountry = (countryCode: string) => {
-    setSelectedCountries(selectedCountries.filter((c) => c.countryCode !== countryCode))
+    setSelectedCountries((current) => current.filter((country) => country.countryCode !== countryCode))
   }
+
+  const allCountries = useMemo(() => [...customCountries, ...countries], [countries, customCountries])
 
   return (
     <DashboardContext.Provider
       value={{
         countries,
+        customCountries,
+        allCountries,
         selectedCountries,
         loading,
         error,
