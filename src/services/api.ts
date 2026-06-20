@@ -1,21 +1,35 @@
-import axios from 'axios'
 import type { Country } from '../types'
 
-const API = axios.create({
-  // Use Vite dev proxy path in development to avoid CORS issues
-  baseURL: '/restcountries/v3.1',
-  timeout: 10000,
-})
+interface RestCountryResponse {
+  name: {
+    common: string
+  }
+  capital?: string[]
+  population: number
+  area: number
+  region?: string
+  cca2: string
+}
+
+const COUNTRIES_URL =
+  'https://restcountries.com/v3.1/all?fields=name,capital,population,area,region,cca2'
 
 export const countryService = {
-  getAllCountries: async (): Promise<Country[]> => {
-    const response = await API.get('/all')
-    return response.data.map((country: any) => ({
+  async getAllCountries(): Promise<Country[]> {
+    const response = await fetch(COUNTRIES_URL)
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch countries: HTTP ${response.status}`)
+    }
+
+    const data = (await response.json()) as RestCountryResponse[]
+
+    return data.map((country) => ({
       name: country.name.common,
-      capital: country.capital?.[0] || 'N/A',
+      capital: country.capital?.[0] ?? 'N/A',
       population: country.population,
       area: country.area,
-      region: country.region || 'Unknown',
+      region: country.region ?? 'Unknown',
       countryCode: country.cca2,
     }))
   },
