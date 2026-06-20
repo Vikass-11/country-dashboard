@@ -4,9 +4,9 @@ export const Admin = () => {
   const { user } = useAuth()
 
   return (
-    <div style={{ padding: '20px' }}>
+    <main className="page-shell status-panel">
       <h1>Admin</h1>
       <p>Hello, {user?.username}. This is admin-only content.</p>
-    </div>
+    </main>
   )
 }

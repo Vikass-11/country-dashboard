@@ -4,9 +4,9 @@ export const User = () => {
   const { user } = useAuth()
 
   return (
-    <div style={{ padding: '20px' }}>
+    <main className="page-shell status-panel">
       <h1>User</h1>
       <p>Welcome back, {user?.username}. This is regular user content.</p>
-    </div>
+    </main>
   )
 }

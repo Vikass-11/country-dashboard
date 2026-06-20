@@ -1,8 +1,9 @@
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../store/authStore'
-import { loginSchema, LoginFormData } from '../utils/validators'
+import { loginSchema } from '../utils/validators'
+import type { LoginFormData } from '../utils/validators'
 
 export const Login = () => {
   const navigate = useNavigate()
@@ -10,9 +11,13 @@ export const Login = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      username: '',
+      password: '',
+    },
   })
 
   const onSubmit = async (data: LoginFormData) => {
@@ -21,21 +26,43 @@ export const Login = () => {
   }
 
   return (
-    <div>
-      <h1>Login</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
+    <main className="auth-shell">
+      <section className="auth-card">
         <div>
-          <label>Username</label>
-          <input {...register('username')} />
-          {errors.username && <p>{errors.username.message}</p>}
+          <p className="eyebrow">Auth Flow POC</p>
+          <h1>Sign in to the dashboard</h1>
+          <p className="hero-copy">
+            This proof of concept stores the mock JWT in <code>localStorage</code> for demo
+            simplicity and route persistence. In production, an HttpOnly cookie would be safer for
+            sensitive tokens.
+          </p>
         </div>
-        <div>
-          <label>Password</label>
-          <input type="password" {...register('password')} />
-          {errors.password && <p>{errors.password.message}</p>}
-        </div>
-        <button type="submit">Login</button>
-      </form>
-    </div>
+
+        <form className="auth-form" onSubmit={handleSubmit(onSubmit)} noValidate>
+          <label className="field" htmlFor="username">
+            <span>Username</span>
+            <input id="username" autoComplete="username" {...register('username')} />
+            {errors.username ? <small role="alert">{errors.username.message}</small> : null}
+          </label>
+
+          <label className="field" htmlFor="password">
+            <span>Password</span>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              {...register('password')}
+            />
+            {errors.password ? <small role="alert">{errors.password.message}</small> : null}
+          </label>
+
+          <button className="primary-button" type="submit" disabled={isSubmitting}>
+            Log in
+          </button>
+        </form>
+
+        <p className="helper-copy">Use username `admin` for admin access. Any other valid username becomes a regular user.</p>
+      </section>
+    </main>
   )
 }

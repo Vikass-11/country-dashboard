@@ -1,4 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState } from 'react'
+import type { ReactNode } from 'react'
 import type { User } from '../types'
 
 interface AuthContextType {
@@ -11,15 +13,31 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [token, setToken] = useState<string | null>(
-    localStorage.getItem('token') || null
-  )
+const TOKEN_STORAGE_KEY = 'token'
+const USER_STORAGE_KEY = 'user'
 
-  const login = async (username: string, password: string) => {
+const getStoredUser = (): User | null => {
+  const storedUser = localStorage.getItem(USER_STORAGE_KEY)
+
+  if (!storedUser) {
+    return null
+  }
+
+  try {
+    return JSON.parse(storedUser) as User
+  } catch {
+    localStorage.removeItem(USER_STORAGE_KEY)
+    return null
+  }
+}
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser] = useState<User | null>(() => getStoredUser())
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY))
+
+  const login = async (username: string, password: string): Promise<void> => {
     if (username && password) {
-      const mockToken = 'jwt_token_' + Date.now()
+      const mockToken = `jwt_token_${Date.now()}`
       const mockUser: User = {
         id: '1',
         username,
@@ -27,16 +45,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: username === 'admin' ? 'admin' : 'user',
         token: mockToken,
       }
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('user', JSON.stringify(mockUser))
+      localStorage.setItem(TOKEN_STORAGE_KEY, mockToken)
+      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(mockUser))
       setUser(mockUser)
       setToken(mockToken)
     }
   }
 
   const logout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('user')
+    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(USER_STORAGE_KEY)
     setUser(null)
     setToken(null)
   }
@@ -46,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       value={{
         user,
         token,
-        isAuthenticated: !!token,
+        isAuthenticated: Boolean(token),
         login,
         logout,
       }}
