@@ -1,26 +1,28 @@
+import { Bar, Line } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
   Legend,
+  Filler, // 1. Import the Filler plugin
+  type ChartData,
 } from 'chart.js'
-import { Bar, Line } from 'react-chartjs-2'
-import type { ChartData, ChartOptions } from 'chart.js'
 
 ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  PointElement,
   LineElement,
+  PointElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  Filler // 2. Register the Filler plugin
 )
 
 interface ChartComponentProps {
@@ -28,29 +30,30 @@ interface ChartComponentProps {
   lineData: ChartData<'line'>
 }
 
-const chartOptions: ChartOptions<'bar' | 'line'> = {
+const commonOptions = {
   responsive: true,
   maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'bottom',
+      position: 'top' as const,
     },
   },
 }
 
 export const ChartComponent = ({ barData, lineData }: ChartComponentProps) => {
   return (
-    <section className="chart-grid" aria-label="Country analytics charts">
-      <div className="panel chart-panel">
-        <h2>Population by Region</h2>
-        <div className="chart-frame">
-          <Bar data={barData} options={chartOptions} />
+    <section className="charts-grid" aria-label="Visual analytics metrics">
+      <div className="panel chart-card" style={{ minHeight: '300px', position: 'relative' }}>
+        <h3 className="eyebrow" style={{ marginBottom: '1rem' }}>Regional Populations</h3>
+        <div style={{ height: '250px' }}>
+          <Bar data={barData} options={commonOptions} />
         </div>
       </div>
-      <div className="panel chart-panel">
-        <h2>Area by Region</h2>
-        <div className="chart-frame">
-          <Line data={lineData} options={chartOptions} />
+
+      <div className="panel chart-card" style={{ minHeight: '300px', position: 'relative' }}>
+        <h3 className="eyebrow" style={{ marginBottom: '1rem' }}>Regional Land Footprint</h3>
+        <div style={{ height: '250px' }}>
+          <Line data={lineData} options={commonOptions} />
         </div>
       </div>
     </section>
