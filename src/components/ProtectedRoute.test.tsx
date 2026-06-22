@@ -1,31 +1,37 @@
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
-import { AuthProvider } from '../store/authStore'
+import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { ProtectedRoute } from './ProtectedRoute'
+import * as authStore from '../store/authStore'
 
-describe('ProtectedRoute', () => {
-  it('redirects unauthenticated users to login', () => {
-    localStorage.clear()
+describe('ProtectedRoute Component Redirection', () => {
+  it('redirects unauthorized context visitors to the login workspace window', () => {
+    // Force mock state to unauthenticated
+    vi.spyOn(authStore, 'useAuth').mockReturnValue({
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      login: async () => {},
+      logout: () => {},
+    })
 
     render(
-      <MemoryRouter initialEntries={['/admin']}>
-        <AuthProvider>
-          <Routes>
-            <Route path="/login" element={<h1>Login Screen</h1>} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <h1>Admin Screen</h1>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </AuthProvider>
+      <MemoryRouter initialEntries={['/dashboard']}>
+        <Routes>
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <div>Secret Dashboard Content</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/login" element={<div>Redirected Login View Target</div>} />
+        </Routes>
       </MemoryRouter>
     )
 
-    expect(screen.getByRole('heading', { name: /login screen/i })).toBeInTheDocument()
+    expect(screen.queryByText(/secret dashboard content/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/redirected login view target/i)).toBeInTheDocument()
   })
 })

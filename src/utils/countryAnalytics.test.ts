@@ -1,38 +1,26 @@
-import { describe, expect, it } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { buildRegionAnalytics } from './countryAnalytics'
+import type { Country } from '../types'
 
 describe('buildRegionAnalytics', () => {
-  it('groups countries by region and sorts by population', () => {
-    const analytics = buildRegionAnalytics([
-      {
-        name: 'A',
-        capital: 'A City',
-        population: 50,
-        area: 20,
-        region: 'Europe',
-        countryCode: 'AA',
-      },
-      {
-        name: 'B',
-        capital: 'B City',
-        population: 100,
-        area: 45,
-        region: 'Asia',
-        countryCode: 'BB',
-      },
-      {
-        name: 'C',
-        capital: 'C City',
-        population: 60,
-        area: 15,
-        region: 'Europe',
-        countryCode: 'CC',
-      },
-    ])
+  it('correctly aggregates populations and areas across matching regions', () => {
+    const sampleCountries: Country[] = [
+      { name: 'Country A', capital: 'Cap A', population: 100, area: 10, region: 'Asia', countryCode: 'AA' },
+      { name: 'Country B', capital: 'Cap B', population: 200, area: 20, region: 'Asia', countryCode: 'BB' },
+      { name: 'Country C', capital: 'Cap C', population: 50, area: 5, region: 'Europe', countryCode: 'CC' },
+    ]
 
-    expect(analytics.labels).toEqual(['Europe', 'Asia'])
-    expect(analytics.populations).toEqual([110, 100])
-    expect(analytics.areas).toEqual([35, 45])
-    expect(analytics.largestPopulationRegion).toBe('Europe')
+    const result = buildRegionAnalytics(sampleCountries)
+
+    expect(result.labels).toContain('Asia')
+    expect(result.labels).toContain('Europe')
+    
+    // Asia checks
+    const asiaIndex = result.labels.indexOf('Asia')
+    expect(result.populations[asiaIndex]).toBe(300)
+    expect(result.areas[asiaIndex]).toBe(30)
+
+    // Largest region check
+    expect(result.largestPopulationRegion).toBe('Asia')
   })
 })

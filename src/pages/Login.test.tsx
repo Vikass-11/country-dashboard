@@ -1,27 +1,30 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
-import { AuthProvider } from '../store/authStore'
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { BrowserRouter } from 'react-router-dom'
 import { Login } from './Login'
 
-describe('Login page validation', () => {
-  it('shows inline validation errors for invalid input', async () => {
-    const user = userEvent.setup()
+// Mock the auth context hook
+vi.mock('../store/authStore', () => ({
+  useAuth: () => ({
+    login: vi.fn(),
+  }),
+}))
 
+describe('Login Component Validation', () => {
+  it('displays schema validation errors when input lengths are insufficient', async () => {
     render(
-      <MemoryRouter>
-        <AuthProvider>
-          <Login />
-        </AuthProvider>
-      </MemoryRouter>
+      <BrowserRouter>
+        <Login />
+      </BrowserRouter>
     )
 
-    await user.type(screen.getByLabelText(/username/i), 'ab')
-    await user.type(screen.getByLabelText(/password/i), 'abc')
-    await user.click(screen.getByRole('button', { name: /log in/i }))
+    const submitButton = screen.getByRole('button', { name: /log in/i })
+    fireEvent.click(submitButton)
 
-    expect(await screen.findByText(/username must be at least 3 characters/i)).toBeInTheDocument()
-    expect(await screen.findByText(/password must be at least 6 characters/i)).toBeInTheDocument()
+    // Expecting inline errors enforced by Zod schema configuration
+    await waitFor(() => {
+      expect(screen.getByText(/username must be at least 3 characters/i)).toBeInTheDocument()
+      expect(screen.getByText(/password must be at least 6 characters/i)).toBeInTheDocument()
+    })
   })
 })
