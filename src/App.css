@@ -246,9 +246,18 @@ input:focus-visible {
   color: #0f172a;
 }
 
+/* 1. Add min-width: 0 to allow the grid child to shrink */
 .country-list li div {
   display: grid;
   gap: 0.2rem;
+  min-width: 0; 
+}
+
+/* 2. Force the text to wrap instead of stretching the container */
+.country-list li div strong,
+.country-list li div span {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
 .country-list li span {
