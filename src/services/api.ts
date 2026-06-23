@@ -1,20 +1,21 @@
+import axios from 'axios'
 import type { Country } from '../types'
 
 interface RestCountryResponse {
-  name: {
+  names: {
     common: string
   }
-  capital?: string[]
+  capital?: string[] | string
   population: number
   area: number
   region?: string
-  cca2: string
+  codes: {
+    alpha_2: string
+  }
 }
 
-const COUNTRIES_URL =
-  'https://restcountries.com/v3.1/all?fields=name,capital,population,area,region,cca2'
+const COUNTRIES_URL = 'https://api.restcountries.com/countries/v5?limit=100';
 
-// Robust static backup array in case the public API is down or blocked
 const MOCK_COUNTRIES: Country[] = [
   { name: 'United States', capital: 'Washington, D.C.', population: 331000000, area: 9834000, region: 'Americas', countryCode: 'US' },
   { name: 'Germany', capital: 'Berlin', population: 83000000, area: 357022, region: 'Europe', countryCode: 'DE' },
@@ -29,28 +30,34 @@ const MOCK_COUNTRIES: Country[] = [
 export const countryService = {
   async getAllCountries(): Promise<Country[]> {
     try {
-      const response = await fetch(COUNTRIES_URL)
+      const response = await axios.get(COUNTRIES_URL, {
+        headers: {
+          'Authorization': 'Bearer rc_live_96873676d03a48d2946132c1c1d5b793'
+        }
+      })
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
-      }
+      const rawData = response.data
+      const data: RestCountryResponse[] = Array.isArray(rawData) ? rawData : (rawData.data || [])
 
-      const data = (await response.json()) as RestCountryResponse[]
+      return data.map((country) => {
+        const capitalStr = Array.isArray(country.capital) 
+          ? country.capital[0] 
+          : (country.capital ?? 'N/A')
 
-      return data.map((country) => ({
-        name: country.name.common,
-        capital: country.capital?.[0] ?? 'N/A',
-        population: country.population,
-        area: country.area,
-        region: country.region ?? 'Unknown',
-        countryCode: country.cca2,
-      }))
+        return {
+          name: country.names?.common ?? 'Unknown',
+          capital: capitalStr,
+          population: country.population ?? 0,
+          area: country.area ?? 0,
+          region: country.region ?? 'Unknown',
+          countryCode: country.codes?.alpha_2 ?? 'XX',
+        }
+      })
     } catch (error) {
       console.warn(
-        'RestCountries API fetch failed or was blocked by CORS. Switching to local fallback dataset.',
+        'RestCountries API fetch failed via Axios. Switching to local fallback dataset.',
         error
       )
-      // Return the mock array so the dashboard charts and features still render perfectly
       return MOCK_COUNTRIES
     }
   },
