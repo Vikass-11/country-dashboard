@@ -1,9 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react'
+import { create } from 'zustand'
+import Cookies from 'js-cookie'
 import type { ReactNode } from 'react'
 import type { User } from '../types'
 
-interface AuthContextType {
+interface AuthState {
   user: User | null
   token: string | null
   isAuthenticated: boolean
@@ -11,73 +12,58 @@ interface AuthContextType {
   logout: () => void
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-const TOKEN_STORAGE_KEY = 'token'
-const USER_STORAGE_KEY = 'user'
+const TOKEN_COOKIE_KEY = 'auth_token'
+const USER_COOKIE_KEY = 'auth_user'
 
 const getStoredUser = (): User | null => {
-  const storedUser = localStorage.getItem(USER_STORAGE_KEY)
-
-  if (!storedUser) {
-    return null
-  }
-
+  const storedUser = Cookies.get(USER_COOKIE_KEY)
+  if (!storedUser) return null
   try {
     return JSON.parse(storedUser) as User
   } catch {
-    localStorage.removeItem(USER_STORAGE_KEY)
+    Cookies.remove(USER_COOKIE_KEY)
     return null
   }
 }
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(() => getStoredUser())
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY))
+const initialToken = Cookies.get(TOKEN_COOKIE_KEY) || null
 
-  const login = async (username: string, password: string): Promise<void> => {
+export const useAuth = create<AuthState>((set) => ({
+  user: getStoredUser(),
+  token: initialToken,
+  isAuthenticated: Boolean(initialToken),
+
+  login: async (username, password) => {
     if (username && password) {
       const mockToken = `jwt_token_${Date.now()}`
+      
+      const cleanedInput = username.trim().toLowerCase()
+      const isAdmin = cleanedInput === 'admin' || cleanedInput === 'admin@example.com'
+      const displayUsername = username.includes('@') ? username.split('@')[0] : username
+
       const mockUser: User = {
         id: '1',
-        username,
-        email: `${username}@example.com`,
-        role: username === 'admin' ? 'admin' : 'user',
+        username: displayUsername,
+        email: username.includes('@') ? username : `${username}@example.com`,
+        role: isAdmin ? 'admin' : 'user',
         token: mockToken,
       }
-      localStorage.setItem(TOKEN_STORAGE_KEY, mockToken)
-      localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(mockUser))
-      setUser(mockUser)
-      setToken(mockToken)
+      
+      // Cookie attributes configured to function smoothly on localhost environment trees
+      Cookies.set(TOKEN_COOKIE_KEY, mockToken, { expires: 7 })
+      Cookies.set(USER_COOKIE_KEY, JSON.stringify(mockUser), { expires: 7 })
+      
+      set({ user: mockUser, token: mockToken, isAuthenticated: true })
     }
-  }
+  },
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
-    localStorage.removeItem(USER_STORAGE_KEY)
-    setUser(null)
-    setToken(null)
+  logout: () => {
+    Cookies.remove(TOKEN_COOKIE_KEY)
+    Cookies.remove(USER_COOKIE_KEY)
+    set({ user: null, token: null, isAuthenticated: false })
   }
+}))
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        isAuthenticated: Boolean(token),
-        login,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return context
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  return children
 }

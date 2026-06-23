@@ -1,13 +1,13 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useMemo, useState } from 'react'
+import { create } from 'zustand'
 import type { ReactNode } from 'react'
 import type { Country } from '../types'
 
-interface DashboardContextType {
+interface DashboardState {
   countries: Country[]
   customCountries: Country[]
-  allCountries: Country[]
   selectedCountries: Country[]
+  allCountries: Country[]
   loading: boolean
   error: string | null
   setCountries: (countries: Country[]) => void
@@ -19,60 +19,47 @@ interface DashboardContextType {
   setError: (error: string | null) => void
 }
 
-const DashboardContext = createContext<DashboardContextType | undefined>(undefined)
+export const useDashboard = create<DashboardState>((set) => ({
+  countries: [],
+  customCountries: [],
+  selectedCountries: [],
+  allCountries: [], 
+  loading: false,
+  error: null,
+
+  setCountries: (countries) => set((state) => ({ 
+    countries,
+    allCountries: [...state.customCountries, ...countries]
+  })),
+  
+  addCountry: (country) => set((state) => {
+    const updatedCustom = [...state.customCountries, { ...country, id: Date.now().toString() }]
+    return {
+      customCountries: updatedCustom,
+      allCountries: [...updatedCustom, ...state.countries]
+    }
+  }),
+  
+  removeCountry: (countryCode) => set((state) => {
+    const updatedCustom = state.customCountries.filter((c) => c.countryCode !== countryCode)
+    return {
+      customCountries: updatedCustom,
+      allCountries: [...updatedCustom, ...state.countries]
+    }
+  }),
+  
+  selectCountry: (country) => set((state) => ({
+    selectedCountries: [...state.selectedCountries, country]
+  })),
+  
+  deselectCountry: (countryCode) => set((state) => ({
+    selectedCountries: state.selectedCountries.filter((c) => c.countryCode !== countryCode)
+  })),
+  
+  setLoading: (loading) => set({ loading }),
+  setError: (error) => set({ error }),
+}))
 
 export const DashboardProvider = ({ children }: { children: ReactNode }) => {
-  const [countries, setCountries] = useState<Country[]>([])
-  const [customCountries, setCustomCountries] = useState<Country[]>([])
-  const [selectedCountries, setSelectedCountries] = useState<Country[]>([])
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const addCountry = (country: Country) => {
-    setCustomCountries((current) => [...current, { ...country, id: Date.now().toString() }])
-  }
-
-  const removeCountry = (countryCode: string) => {
-    setCustomCountries((current) => current.filter((country) => country.countryCode !== countryCode))
-  }
-
-  const selectCountry = (country: Country) => {
-    setSelectedCountries((current) => [...current, country])
-  }
-
-  const deselectCountry = (countryCode: string) => {
-    setSelectedCountries((current) => current.filter((country) => country.countryCode !== countryCode))
-  }
-
-  const allCountries = useMemo(() => [...customCountries, ...countries], [countries, customCountries])
-
-  return (
-    <DashboardContext.Provider
-      value={{
-        countries,
-        customCountries,
-        allCountries,
-        selectedCountries,
-        loading,
-        error,
-        setCountries,
-        addCountry,
-        removeCountry,
-        selectCountry,
-        deselectCountry,
-        setLoading,
-        setError,
-      }}
-    >
-      {children}
-    </DashboardContext.Provider>
-  )
-}
-
-export const useDashboard = () => {
-  const context = useContext(DashboardContext)
-  if (!context) {
-    throw new Error('useDashboard must be used within DashboardProvider')
-  }
-  return context
+  return children
 }
